@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "author": "Yavuz Semih Dogandemir",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-breadboard-mini", "id": "bb1", "top": 46.6, "left": 189.6, "attrs": {} },
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 19.8, "left": -96.6, "attrs": {} },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": -132,
+      "left": 174.6,
+      "attrs": { "volume": "0.1" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -44.05,
+      "left": 48,
+      "attrs": { "value": "1000" }
+    },
+    {
+      "type": "wokwi-ntc-temperature-sensor",
+      "id": "ntc1",
+      "top": 117.8,
+      "left": 28.2,
+      "attrs": {}
+    },
+    { "type": "wokwi-microsd-card", "id": "sd1", "top": 182.63, "left": 240.07, "attrs": {} },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb1",
+      "top": 90.4,
+      "left": -37.3,
+      "attrs": { "common": "cathode" }
+    }
+  ],
+  "connections": [
+    [ "uno:GND.3", "bb1:1b.j", "black", [ "v47.9", "h119.2", "v-96" ] ],
+    [ "uno:5V", "bb1:2b.j", "red", [ "v67.1", "h147.8", "v-115.2" ] ],
+    [ "uno:3.3V", "bb1:3b.j", "#8f4814", [ "v95.9", "h52.2" ] ],
+    [ "bz1:1", "bb1:1b.f", "black", [ "v38.4", "h-38.4" ] ],
+    [ "bz1:2", "r1:2", "red", [ "v0" ] ],
+    [ "r1:1", "uno:9", "red", [ "v0" ] ],
+    [ "ntc1:VCC", "bb1:2b.f", "red", [ "h0" ] ],
+    [ "ntc1:OUT", "uno:A0", "magenta", [ "v38.3", "h-3.8" ] ],
+    [ "sd1:VCC", "bb1:2b.h", "red", [ "h9.6", "v-86.26", "h-115.2" ] ],
+    [ "sd1:GND", "bb1:1b.i", "black", [ "h9.6", "v-38.29", "h-134.4", "v-19.2" ] ],
+    [ "sd1:CS", "uno:10", "cyan", [ "h67.2", "v-239.94", "h-355.2" ] ],
+    [ "sd1:DI", "uno:11", "magenta", [ "h76.8", "v-240.09", "h-9.6" ] ],
+    [ "sd1:CD", "uno:8", "yellow", [ "h57.6", "v-172.8", "h-19.2" ] ],
+    [ "sd1:DO", "uno:12", "blue", [ "h86.4", "v-211.09", "h-364.8", "v38.4" ] ],
+    [ "sd1:SCK", "uno:13", "green", [ "h96", "v-240.01", "h-384" ] ],
+    [ "ntc1:GND", "bb1:1b.h", "black", [ "h0" ] ],
+    [ "rgb1:COM", "uno:GND.1", "black", [ "v9.2", "h38.5", "v-48" ] ],
+    [ "rgb1:R", "uno:2", "red", [ "v0", "h-9.6", "v-163.2", "h182.4" ] ],
+    [ "rgb1:G", "uno:3", "limegreen", [ "v9.6", "h20.5", "v-76.8", "h124.8" ] ],
+    [ "rgb1:B", "uno:4", "blue", [ "v-86.4", "h126.4" ] ]
+  ],
+  "dependencies": {}
+}
