@@ -1,9 +1,8 @@
 /*
   ArduinOS - lightweight serial-based OS for Arduino
-  MIT License, 2025 Yavuz Dogandemir
+  MIT License, 2026 Yavuz Semih Dogandemir
   https://vasthosting.nl/arduinos
 */
-
 
 #include <EEPROM.h> //EEPROM support will be added in the future updates
 
@@ -17,26 +16,33 @@ const float OSver = 0.2; // os version
 const float kver = 0.1; //kernel version
 
 
+//setting veriables default
+bool sound = true;
+
 const byte buzzerPin = 9;               // buzzer pin
 const int serialBaud = 9600;           // baud rate
 int openingMelody[] = {280, 380, 480}; // Hz frequencies opening medlody
-String username = "Guest"; //defult username
+String username = "root"; //default username
 String input; //set up the input variable
 int confirmDelay = 400;
 byte nameSet = 1;
 int cal = 0; //calculator variable
 int8_t temppin = 0;
-String lastTask = "defult";
+String lastTask = "default";
 String app;
 byte loopv = 1;
 String benchmarkstr;
-unsigned long loopCounter = 0;
-unsigned long lastReport = 0;
-unsigned long lastReportDuration = 0;
+byte loopCounter = 0;
+int lastReport = 0;
+int lastReportDuration = 0;
 bool benchmarkMode = false; 
 //unsigned long avgtime[1000];  // or smaller if RAM is limited
 int bcount = 0;
-unsigned long lastLoopTime = 0;
+byte linelength;
+int lastLoopTime = 0;
+String editor[10];
+bool inEditor = false;
+bool firstRun;
 
 //onboard rgb pins
 byte redpin = 2;
@@ -57,9 +63,9 @@ byte bluepin = 4;
 void inputClear() {
   input = "";
   Serial.println(F(" "));
-  tone(buzzerPin, 10, confirmDelay); 
+  confirm();
   digitalWrite(greenpin, HIGH);
-  delay(100);
+  delay(75);
   digitalWrite(greenpin, LOW);
 }
 
@@ -72,10 +78,13 @@ void line(){
 }
 
 void confirm(){
+  if (sound == true){
   tone(buzzerPin, 10, confirmDelay); 
+  }
 }
 
 void startsound(){
+  if (sound == true){
     for (int i = 0; i < 3; i++) {
     tone(buzzerPin, openingMelody[i]); // play each note
     delay(100);                        // hold note for 0.1 sec
@@ -83,10 +92,11 @@ void startsound(){
     delay(50);                        // pause between notes
     digitalWrite(bluepin, HIGH);
     digitalWrite(bluepin, LOW);
-  }
+  }}
       digitalWrite(greenpin, HIGH);
     delay(50);
     digitalWrite(greenpin, LOW);
+    firstRun = true;
 }
 
 void osloadtime(){
@@ -116,7 +126,6 @@ void readInput(){
   if(Serial.available()){
   input = Serial.readStringUntil('\n');//keep reading the console
   input.trim();
-  
   }
 }
 
@@ -124,7 +133,7 @@ void checkMem(){
   int ramFree = freeRam();// how many bytes are still free
   int totalRam = RAMEND;// max capacity
   int usedRam = totalRam - ramFree;
-      Serial.println(F("Used Mem: "));
+      Serial.print(F("Used Mem: "));
       Serial.print(usedRam); // used bytes in buffer
       Serial.print(F(" / "));
       Serial.print(totalRam);
@@ -133,6 +142,26 @@ void checkMem(){
       lastTask = "Mem check";
 }
 
+void startLine(){
+  if (loopv == 0 && firstRun == false){
+    space();
+    Serial.print(F("@"));
+    Serial.print(username);
+    Serial.print(F("> "));
+  }
+  loopv = 1;
+}
+
+void inputGet(){
+  if(input == "ÿ" || input == 'ÿ'){}else{
+    if(firstRun == false){
+    Serial.println(input);
+    }
+  }
+}
+
+
+
 //startup
 void setup() {
   //set pins
@@ -140,7 +169,7 @@ void setup() {
   pinMode(greenpin, OUTPUT);
   pinMode(bluepin, OUTPUT);
   Serial.begin(serialBaud);            // start serial (optional)
-  Serial.println(F("Arduino OS ready!"));
+  Serial.println(F("ArduinOS ready!"));
   Serial.print(F("Welcome "));
   Serial.println(username);
   Serial.println(String("Kernel Version ") + kver);
@@ -153,18 +182,20 @@ void setup() {
   line();
   space();
   startsound();
+  startLine();
   lastTask = "Os Start";
 }
 
 
 //loop
 void loop() {
+  startLine();
   //if there is a input
   if(Serial.available()){
-  //variables
-  readInput();
 
-  }
+  readInput();
+  inputGet();
+
   int serialMemory = Serial.available();
 
 
@@ -183,6 +214,7 @@ if (input == "h"){
     Serial.println(F("'p' Print"));
     Serial.println(F("'e' File/Text Editor"));
     Serial.println(F("'b' Benchmark"));
+    Serial.println(F("'er' See last edited text in editor"));
     Serial.println(F("'rb' Reboot"));
   inputClear();
   lastTask = "help command";
@@ -351,12 +383,13 @@ if (input == "rb") {                           // user typed rb
 
 //terminal editor
 if (input == "e"){
-
   char inputc;         // last character read
   loopv = 1;
   byte line = 1;
   String inpute;
   byte enter = 1;
+  linelength = 0;
+  inEditor = true;
 
   inputClear();
   Serial.print(line + String("| "));
@@ -374,14 +407,17 @@ if (input == "e"){
             Serial.println(F("Editor Exited"));
             inputClear();
             lastTask = "Editor";
+            inEditor = false;
           }else{
             enter = 1;
           }
         }
         if(enter == 1){
         Serial.println(inpute);      // print the line user typed
+        editor[line] = inpute;
         inpute = "";                 // clear input for next line
         line++;                     // increment line number
+        linelength = line;
         Serial.print(line);
         Serial.print(F("| "));
         }
@@ -391,6 +427,56 @@ if (input == "e"){
     }
   }
 }
+
+//editor read
+if (input == "er"){
+  inputClear();
+  linelength = linelength - 1;
+for(byte d = 0; d <= linelength; d++ ){
+  if(d > 0){
+  Serial.print(d);
+  Serial.print(F(" |"));
+  Serial.println(editor[d]);
+}
+}
+lastTask = "Editor read";
+}
+
+//settings
+if(input == "s"){
+Serial.println(F("Settings: "));
+Serial.println(F("Sound: 's t/f' "));
+Serial.println(F("@e for exit"));
+loopv = 1;
+inputClear();
+while(loopv == 1){
+  readInput();
+  
+
+  //Sound
+  if (input == "s t"){
+    Serial.println("Sound set to true");
+    sound = true;
+    inputClear();
+  }  
+  if (input == "s f"){
+    Serial.println("Sound set to false");
+    sound = false;
+    inputClear();
+  }
+
+
+  //exit
+  if (input == F("@e")){
+    loopv = 0;
+    Serial.println(F("Settings exited"));
+    lastTask = "Settings";
+    inputClear();
+  }
+}
+}
+
+
 
 
 
@@ -405,6 +491,7 @@ if (input == "b"){
   int bcount = 0;
   benchmarkMode = true;
   inputClear();
+  Serial.println(F("@e to exit"));
 while (benchmarkMode) {
   // 1. CPU stress: floating point math
   float val = 1.0;
@@ -487,10 +574,11 @@ while (benchmarkMode) {
     Serial.println(F("Benchmark ended"));
     inputClear();
     lastTask = "Benchmark";
+    startLine();
   }
 }
 }
-
-
-
+firstRun = false;
+loopv = 0;
+}
 }
