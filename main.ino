@@ -1,11 +1,15 @@
+
 /*
   ArduinOS - lightweight serial-based OS for Arduino
-  MIT License, 2026 Yavuz Semih Dogandemir
+  MIT License, 2025 Yavuz Semih Dogandemir
   https://vasthosting.nl/arduinos
 */
-
 #include <EEPROM.h> //EEPROM support will be added in the future updates
-
+//EEPROM Slot Layout:
+/*
+0 = username
+*/
+#include <IRremote.h>
 
 extern unsigned int __heap_start;
 extern void* __brkval;
@@ -19,12 +23,12 @@ const float kver = 0.1; //kernel version
 //setting veriables default
 bool sound = true;
 
-const byte buzzerPin = 9;               // buzzer pin
+const byte buzzerPin = 11;               // buzzer pin
 const int serialBaud = 9600;           // baud rate
 int openingMelody[] = {280, 380, 480}; // Hz frequencies opening medlody
-String username = "root"; //default username
+char username[20] = "root"; //default username
 String input; //set up the input variable
-int confirmDelay = 400;
+int confirmDelay = 500;
 byte nameSet = 1;
 int cal = 0; //calculator variable
 int8_t temppin = 0;
@@ -48,6 +52,19 @@ bool firstRun;
 byte redpin = 2;
 byte greenpin = 3;
 byte bluepin = 4;
+
+//RFID-RC522 module (will be added)
+byte rstPin = 2;
+byte sdaPin = 3;
+byte sckPin = 4;
+byte mosiPin = 5;
+byte misoPin = 6;
+
+
+//Remote IR control moodule
+byte irPin = 4; 
+IRrecv irrecv(irPin);
+decode_results results;
 
 
 //functions:
@@ -160,15 +177,30 @@ void inputGet(){
   }
 }
 
+void reciveIRRemote(){
+  //check if there is a ir recived
+ if (irrecv.decode()) {
+      Serial.println(F("Rebooting..."));
+    space();
+    Serial.flush();                            // make sure message is sent
+    resetFunc();    
+     irrecv.resume();  // <-- this is critical
+  }
+}
 
 
 //startup
 void setup() {
+  //read EEPROM
+  //get user name from epprom
+  EEPROM.get(0, username);
+  
   //set pins
   pinMode(redpin, OUTPUT);
   pinMode(greenpin, OUTPUT);
   pinMode(bluepin, OUTPUT);
-  Serial.begin(serialBaud);            // start serial (optional)
+  Serial.begin(serialBaud);            // start serial
+  irrecv.begin(irPin, false);  // start receiving IR signals
   Serial.println(F("ArduinOS ready!"));
   Serial.print(F("Welcome "));
   Serial.println(username);
@@ -189,6 +221,7 @@ void setup() {
 
 //loop
 void loop() {
+  reciveIRRemote();
   startLine();
   //if there is a input
   if(Serial.available()){
@@ -202,7 +235,7 @@ void loop() {
 //help command
 if (input == "h"){
 
-    Serial.println("'m' Memory Check");
+    Serial.println(F("'m' Memory Check"));
     Serial.println(F("'tr' Total Runtime"));
     Serial.println(F("'v' Check Version"));
     Serial.println(F("'vk' Check Kernel Version"));
@@ -263,12 +296,12 @@ if (input == "h"){
 
         //get a input
         if(Serial.available()){
-        username = " ";
-        username = Serial.readStringUntil('\n');//keep reading the console in the while
-        username.trim();
+       
+      int len = Serial.readBytesUntil('\n', username, sizeof(username) - 1);
+username[len] = '\0';  //keep reading the console
         inputClear();
         lastTask = "Set username";
-        if (username.length() < 3) {
+        if (strlen(username) < 3 || strlen(username) > 20) {
           if (input == "n"){inputClear();}else{
           Serial.println(F("User Name has to be longer than 3 chracters!"));
           inputClear();
@@ -277,6 +310,7 @@ if (input == "h"){
           loopv = 0;
           Serial.print(F("Name set: "));
           Serial.println(username);
+          EEPROM.put(0, username);
           inputClear();
         }
 
@@ -288,6 +322,8 @@ if (input == "h"){
     //get username
     if (input == "un"){
       Serial.print(F("User Name: "));
+      //get username from the EEPROM
+      EEPROM.get(0, username);
       Serial.println(username);
       inputClear();
       lastTask = "Username get";
